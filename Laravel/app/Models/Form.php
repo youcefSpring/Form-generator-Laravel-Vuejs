@@ -9,11 +9,12 @@ class Form extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'country_id'];
+    protected $fillable = ['country_id'];
+    // protected $fillable = ['name', 'country_id'];
 
     public function country()
     {
-        return $this->belongsTo(Country::class);
+        return $this->belongsTo(Country::class , 'country_id','id');
     }
 
     public function fields()

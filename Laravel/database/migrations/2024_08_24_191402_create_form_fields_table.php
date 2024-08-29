@@ -15,14 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('form_id')
-                  ->constrained()
-                  ->onDelete('cascade');
-
-            $table->string('label')
-                  ->comment("Field label (e.g., 'First Name', 'Email')");
-
-            $table->string('name')
-                  ->comment("Field name (e.g., 'first_name', 'email')");
+                  ->constrained();
+            $table->string('value')->nullable();
 
             $table->string('type')
                    ->comment("Field type (e.g., 'text', 'email', 'select')");

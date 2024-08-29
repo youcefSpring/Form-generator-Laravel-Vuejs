@@ -2,59 +2,105 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Form;
 use App\Models\Country;
 use Illuminate\Http\Request;
+use App\Models\Form;
+use App\Models\FormField;
 
 class FormController extends Controller
 {
     public function index()
     {
-        $forms = Form::with('country')->get();
-        return view('forms.index', compact('forms'));
-    }
-
-    public function create()
-    {
         $countries = Country::all();
-        return view('forms.create', compact('countries'));
+        $forms = Form::with('country', 'fields')->get();
+        return response()->json(
+            [
+                   'forms' => $forms,
+                   'countries' => $countries
+                ], 200);
     }
-
+    // Store a new form
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'country_id' => 'required|exists:countries,id',
+        $input=$request->all();
+
+        $validatedData = $request->validate([
+            'country_id' => 'required'
         ]);
 
-        Form::create($request->all());
-        return redirect()->route('forms.index')->with('success', 'Form created successfully.');
-    }
-
-    public function edit($id)
-    {
-        $form = Form::with('fields')->findOrFail($id);
-        $countries = Country::all();
-        return view('forms.edit', compact('form', 'countries'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $form = Form::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'country_id' => 'required|exists:countries,id',
+        // Create the new form
+        $form = Form::create([
+            'country_id' => $validatedData['country_id'],
+            'name' => Country::find($request->country_id)->name . "Form"
         ]);
 
-        $form->update($request->all());
-        return redirect()->route('forms.index')->with('success', 'Form updated successfully.');
+        // Create the associated fields
+        foreach ($request->fields as $fieldData) {
+            FormField::create([
+                'form_id' => $form->id,
+                'type' => $fieldData['type'],
+                'value' => $fieldData['value'],
+                'category' => $fieldData['category'],
+                'is_required' => $fieldData['is_required'] == true ? 1 : 0,
+                'options' => json_encode($fieldData['options']),
+            ]);
+        }
+
+        return response()->json($form->with('fields','country'), 201);
     }
 
+    // Update an existing form
+    public function update(Request $request, Form $form)
+    {
+        $validatedData = $request->validate([
+            'country_id' => 'required|exists:countries,id',
+            'fields' => 'required|array',
+            'fields.*.type' => 'required|string',
+            'fields.*.category' => 'required|string',
+            'fields.*.is_required' => 'required|boolean',
+            'fields.*.options' => 'nullable|array',
+        ]);
+
+        // Update form's country
+        $form->update([
+            'country_id' => $validatedData['country_id'],
+        ]);
+
+        // Delete old fields
+        $form->fields()->delete();
+
+        // Add updated fields
+        foreach ($validatedData['fields'] as $fieldData) {
+            $form->fields()->create([
+                'type' => $fieldData['type'],
+                'category' => $fieldData['category'],
+                'is_required' => $fieldData['is_required'],
+                'options' => json_encode($fieldData['options']),
+            ]);
+        }
+
+        return response()->json($form->load('fields'), 200);
+    }
+
+    // Delete a form
     public function destroy($id)
     {
-        $form = Form::findOrFail($id);
-        $form->delete();
-        return redirect()->route('forms.index')->with('success', 'Form deleted successfully.');
+        $form=Form::where('id',$id)->frist();
+        $form->fields()->delete(); // Delete associated fields first
+        $form->delete(); // Delete the form
+
+        return response()->json(['message' => 'Form deleted successfully'], 200);
+    }
+
+    // Show a form for a specific country
+    public function show($id)
+    {
+        $form = Form::where('id', $id)->with('fields')->first();
+
+        if (!$form) {
+            return response()->json(['message' => 'Form not found'], 404);
+        }
+
+        return response()->json($form, 200);
     }
 }
