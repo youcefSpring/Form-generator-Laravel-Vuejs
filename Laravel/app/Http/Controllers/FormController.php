@@ -85,7 +85,7 @@ class FormController extends Controller
     // Delete a form
     public function destroy($id)
     {
-        $form=Form::where('id',$id)->frist();
+        $form=Form::where('id',$id)->first();
         $form->fields()->delete(); // Delete associated fields first
         $form->delete(); // Delete the form
 

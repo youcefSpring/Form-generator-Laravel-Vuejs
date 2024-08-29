@@ -87,6 +87,7 @@ export default {
             fetch('http://127.0.0.1:8000/api/form')
                 .then(response => response.json())
                 .then(data => {
+
                     this.savedForms=data.forms
                     this.countries = data.countries;
                 });
@@ -130,11 +131,11 @@ export default {
                 },
                 body: JSON.stringify(formData),
             })
-            .then(response => response.json())
-            .then(data => {
-                this.savedForms.push(data);
-                this.updateFields();
-            });
+            .then(() => {
+                this.updateFields() ;
+                this.fetchCountries();
+            } )
+            ;
         },
         editForm(index) {
             const formToEdit = this.savedForms[index];
@@ -145,7 +146,7 @@ export default {
         deleteForm(index) {
             const formToDelete = this.savedForms[index];
             console.log(formToDelete.id)
-            fetch(`/api/form/${formToDelete.id}`, {
+            fetch(`http://127.0.0.1:8000/api/form/${formToDelete.id}`, {
                 method: 'DELETE',
             }).then(() => {
                 this.savedForms.splice(index, 1);
