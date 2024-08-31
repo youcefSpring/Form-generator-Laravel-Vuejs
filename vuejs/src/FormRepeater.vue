@@ -208,7 +208,7 @@ export default {
         add_new_form(){
         this.list_display=!this.list_display;
         this.is_update=false;
-        this.fetchCountries();
+        // this.fetchCountries();
         },
         onSubmit() {
             const formData = {
