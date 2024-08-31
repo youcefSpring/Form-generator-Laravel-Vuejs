@@ -1,8 +1,40 @@
 <template>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <div class="container mt-4">
-        <h2 class="mb-4">Dynamic Form Generator</h2>
+    <div class="row" v-if="show_preview">
+            <div class="">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="formModalLabel">Form Preview</h5>
+                    </div>
+                   <form action="#">
 
+                        <div v-if="selectedForm" class="row">
+                            <div v-for="(field, index) in selectedForm.fields" :key="index" class="mb-3 col-md-6">
+                                <label :for="`field${index}`" class="form-label">{{ field.type }} Field</label>
+                                <input v-if="field.type !== 'dropdown'" :type="field.type" :id="`field${index}`" class="form-control" :required="field.is_required">
+                                <select v-if="field.type === 'dropdown'" :id="`field${index}`" class="form-select">
+                                    <option v-for="(option, optIndex) in field.options" :key="optIndex">{{ option }}</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4"></div>
+                                <div class="col-md-4">
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
+                                <div class="col-md-4"></div>
+                            </div>
+                        </div>
+
+                   </form>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="form_display">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div class="container mt-4" v-else>
+        <h2 class="mb-4">Dynamic Form Generator</h2>
+               <button class="btn btn-sucess" @click="form_display">form list</button>
     <div v-if="list_display">
             <div class="row">
                 <div class="col-md-6">
@@ -23,6 +55,8 @@
                 <tr v-for="(form, formIndex) in savedForms" :key="formIndex">
                     <td>{{ form.country.name }}</td>
                     <td>
+                        <button @click="showForm(formIndex)" class="btn btn-info btn-sm">Show</button>
+
                         <button @click="editForm(formIndex)" class="btn btn-warning btn-sm">Edit</button>
                         <button @click="deleteForm(formIndex)" class="btn btn-danger btn-sm">Delete</button>
                     </td>
@@ -114,7 +148,7 @@
 
 
 
-    </div>
+</div>
 
 
 </template>
@@ -152,6 +186,7 @@ export default {
             list_display : true,
             id : null,
             formToEdit: null,
+            show_preview:false
         };
     },
     computed: {
@@ -163,6 +198,13 @@ export default {
     },
   },
     methods: {
+        form_display(){
+            this.show_preview=!this.show_preview;
+        },
+        showForm(index) {
+            this.selectedForm = this.savedForms[index];
+            this.show_preview=true;
+        },
         fetchCountries() {
             fetch('http://127.0.0.1:8000/api/form')
                 .then(response => response.json())
@@ -208,7 +250,9 @@ export default {
         add_new_form(){
         this.list_display=!this.list_display;
         this.is_update=false;
-        // this.fetchCountries();
+        if(this.list_display){
+        this.fetchCountries();
+        }
         },
         onSubmit() {
             const formData = {
