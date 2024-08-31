@@ -59,20 +59,15 @@
                             <option value="dropdown">Dropdown</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <input v-if="field.type !== 'dropdown'"
-                               v-model="field.value"
-                               :type="field.type"
-                              :placeholder="`Field ${index + 1}`" :required="field.is_required" class="form-control">
-                        <div v-else>
-                            <input v-for="(option, optIndex) in field.options"
-                                   :key="optIndex"
-                                   v-model="field.options[optIndex]"
-                                   required
-                                   placeholder="Option"
-                                   class="form-control mb-1">
+                    <div class="col-md-3" v-if="field.type == 'dropdown'">
+
+
+              <div v-for="(option, optIndex) in field.options" :key="optIndex" class="input-group mb-1">
+              <input v-model="field.options[optIndex]" placeholder="Option" class="form-control">
+              <button @click="removeOption(index, optIndex)" class="btn btn-danger btn-sm" v-if="field.options.length > 1">Delete</button>
+            </div>
                             <button @click="addOption(index)" class="btn btn-secondary btn-sm">Add Option</button>
-                        </div>
+
                     </div>
                     <div class="col-md-3">
                         <select v-model="field.category" class="form-select">
@@ -96,7 +91,9 @@
             <button @click="removeField" class="btn btn-danger" v-if="this.fields.length > 1">Remove Field</button>
             <button @click="onUpdate" class="btn btn-warning" v-if="is_update">Update</button>
             <button @click="onSubmit" class="btn btn-success" v-else>Submit</button>
-            <button @click="discard_update" class="btn btn-danger" v-if="is_update">Discard Update</button>
+            <button @click="discard_update" class="btn btn-danger" v-if="is_update">
+                <i class="fa-solid fa-rotate-left"></i>
+                Discard Update</button>
 
         </div>
     </div>
@@ -106,13 +103,14 @@
     </div>
 </template>
 
-<script>
+<script >
+
 export default {
     data() {
         return {
             selectedCountry: null,
             countries: [],
-            fields: [{ value: '', type: 'text', category: 'general', is_required: false, options: [] }],
+            fields: [{ type: 'text', category: 'general', is_required: false, options: [''] }],
             savedForms: [],
             is_update : false,
             list_display : true,
@@ -135,11 +133,11 @@ export default {
             fetch(`/api/form/${this.selectedCountry}`)
                 .then(response => response.json())
                 .then(data => {
-                    this.fields = data.fields || [{ value: '', type: 'text', category: 'general', is_required: false, options: [] }];
+                    this.fields = data.fields || [{ type: 'text', category: 'general', is_required: false, options: [''] }];
                 });
         },
         addField() {
-            this.fields.push({ value: '', type: 'text', category: 'general', is_required: false, options: [] });
+            this.fields.push({  type: 'text', category: 'general', is_required: false, options: [''] });
         },
         removeField() {
             if (this.fields.length > 1) {
@@ -154,6 +152,12 @@ export default {
         addOption(index) {
             this.fields[index].options.push('');
         },
+        removeOption(fieldIndex, optionIndex) {
+      if (this.fields[fieldIndex].options.length > 1) {
+        this.fields[fieldIndex].options.splice(optionIndex, 1);
+      }
+
+  },
         add_new_form(){
         this.list_display=!this.list_display;
         },
@@ -237,7 +241,7 @@ export default {
             });
         },
         updateFields() {
-            this.fields = [{ value: '', type: 'text', category: 'general', is_required: false, options: [] }];
+            this.fields = [{ type: 'text', category: 'general', is_required: false, options: [''] }];
         },
     },
     mounted() {
