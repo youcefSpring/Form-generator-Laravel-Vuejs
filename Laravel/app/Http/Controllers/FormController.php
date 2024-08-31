@@ -11,7 +11,7 @@ class FormController extends Controller
 {
     public function index()
     {
-        $countries = Country::all();
+        $countries = Country::whereDoesntHave('form')->withCount('form')->get();
         $forms = Form::with('country', 'fields')->get();
         return response()->json(
             [
@@ -39,7 +39,6 @@ class FormController extends Controller
             FormField::create([
                 'form_id' => $form->id,
                 'type' => $fieldData['type'],
-                'value' => $fieldData['value'],
                 'category' => $fieldData['category'],
                 'is_required' => $fieldData['is_required'] == true ? 1 : 0,
                 'options' => json_encode($fieldData['options']),

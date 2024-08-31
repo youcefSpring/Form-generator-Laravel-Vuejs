@@ -16,7 +16,6 @@ return new class extends Migration
 
             $table->foreignId('form_id')
                   ->constrained();
-            $table->string('value')->nullable();
 
             $table->string('type')
                    ->comment("Field type (e.g., 'text', 'email', 'select')");

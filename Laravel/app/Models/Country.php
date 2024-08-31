@@ -11,7 +11,7 @@ class Country extends Model
 
     protected $fillable = ['name', 'code'];
 
-    public function forms()
+    public function form()
     {
         return $this->hasOne(Form::class);
     }

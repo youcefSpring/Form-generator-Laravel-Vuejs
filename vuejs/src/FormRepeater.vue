@@ -43,9 +43,19 @@
             </div>
         <div class="mb-3">
             <label for="country" class="form-label">Select Country:</label>
-            <select id="country" class="form-select" v-model="selectedCountry" @change="fetchForm">
-                <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.name }}</option>
-            </select>
+            <v-select
+  id="country"
+  class="form-select"
+  v-model="selectedCountry"
+  :options="processedCountries"
+  label="name"
+  :reduce="country => country.id"
+  @input="fetchForm"
+  :custom-label="country => country.name + (country.disabled ? ' (Disabled)' : '')">
+</v-select>
+
+
+
         </div>
 
         <div class="row">
@@ -101,11 +111,33 @@
 
 
     </div>
-</template>
 
+
+</template>
+<style>
+
+body {
+  font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizelegibility;
+  -moz-osx-font-smoothing: grayscale;
+  -moz-text-size-adjust: none;
+}
+
+#app {
+  max-width: 60em;
+  margin: 1em auto;
+}
+
+</style>
 <script >
+import vSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css';
 
 export default {
+    components: {
+    vSelect
+  },
+
     data() {
         return {
             selectedCountry: null,
@@ -117,6 +149,14 @@ export default {
             id : null
         };
     },
+    computed: {
+    processedCountries() {
+      return this.countries.map(country => ({
+        ...country,
+        disabled: country.form_count > 0,
+      }));
+    },
+  },
     methods: {
         fetchCountries() {
             fetch('http://127.0.0.1:8000/api/form')
@@ -125,6 +165,7 @@ export default {
 
                     this.savedForms=data.forms
                     this.countries = data.countries;
+                    console.log(this.countries)
                 });
         },
         fetchForm() {
@@ -178,6 +219,7 @@ export default {
             .then(() => {
                 this.updateFields() ;
                 this.fetchCountries();
+                this.list_display=true;
             } )
             ;
         },
