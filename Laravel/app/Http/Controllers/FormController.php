@@ -60,10 +60,11 @@ class FormController extends Controller
     public function update(Request $request, $id)
     {
           $form=Form::findOrFail($id);
+
           if(!isset($form)){
             return response()->json([], 400);
           }else{
-            $form->country_id=$request->form['country_id'];
+            $form->country_id=$request->country_id;
             $form->fields()->delete();
             foreach ($request->form['fields'] as $fieldData) {
                 FormField::create([

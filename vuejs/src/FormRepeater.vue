@@ -234,10 +234,11 @@ export default {
         },
         onUpdate() {
             const formData = {
+                country_id : this.selectedCountry,
                 form: this.formToEdit,
             };
 
-            // console.log(formData)
+            console.log(formData)
             fetch(`http://127.0.0.1:8000/api/form/${this.formToEdit.id}`, {
                 method: 'PUT',
                 headers: {
@@ -245,7 +246,8 @@ export default {
                 },
                 body: JSON.stringify(formData),
             })
-            .then(() => {
+            .then((data) => {
+                console.log(data.data)
                 this.updateFields();
                 this.fetchCountries();
                 this.list_display=true;
