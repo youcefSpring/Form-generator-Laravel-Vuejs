@@ -16,8 +16,22 @@ class FormField extends Model
         'is_required' => 'boolean',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::retrieved(function ($formField) {
+            if ($formField->type === 'dropdown' && is_string($formField->options)) {
+                $formField->options = json_decode($formField->options, true);
+            }
+        });
+    }
+
     public function form()
     {
         return $this->belongsTo(Form::class);
     }
+
+
+
 }

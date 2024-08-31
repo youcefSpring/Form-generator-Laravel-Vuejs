@@ -13,6 +13,15 @@ class FormController extends Controller
     {
         $countries = Country::whereDoesntHave('form')->withCount('form')->get();
         $forms = Form::with('country', 'fields')->get();
+
+        // foreach ( $forms as $form) {
+        //     foreach ($form->fields as $f){
+        //         if($f->type == "dropdown"){
+        //             $f->options=json_decode($f->options);
+        //         }
+        //     }
+
+        // };
         return response()->json(
             [
                    'forms' => $forms,
@@ -30,8 +39,7 @@ class FormController extends Controller
 
         // Create the new form
         $form = Form::create([
-            'country_id' => $validatedData['country_id'],
-            'name' => Country::find($request->country_id)->name . "Form"
+            'country_id' => $validatedData['country_id']
         ]);
 
         // Create the associated fields
@@ -41,7 +49,7 @@ class FormController extends Controller
                 'type' => $fieldData['type'],
                 'category' => $fieldData['category'],
                 'is_required' => $fieldData['is_required'] == true ? 1 : 0,
-                'options' => json_encode($fieldData['options']),
+                'options' => isset($fieldData['options']) ? json_encode($fieldData['options']) : null,
             ]);
         }
 
@@ -49,34 +57,51 @@ class FormController extends Controller
     }
 
     // Update an existing form
-    public function update(Request $request, Form $form)
+    public function update(Request $request, $id)
     {
-        $validatedData = $request->validate([
-            'country_id' => 'required|exists:countries,id',
-            'fields' => 'required|array',
-            'fields.*.type' => 'required|string',
-            'fields.*.category' => 'required|string',
-            'fields.*.is_required' => 'required|boolean',
-            'fields.*.options' => 'nullable|array',
-        ]);
+          $form=Form::findOrFail($id);
+          if(!isset($form)){
+            return response()->json([], 400);
+          }else{
+            $form->country_id=$request->form['country_id'];
+            $form->fields()->delete();
+            foreach ($request->form['fields'] as $fieldData) {
+                FormField::create([
+                    'form_id' => $form->id,
+                    'type' => $fieldData['type'],
+                    'category' => $fieldData['category'],
+                    'is_required' => $fieldData['is_required'] == true ? 1 : 0,
+                    'options' => json_encode($fieldData['options']),
+                ]);
+            }
+            return response()->json($form->with('fields','country'), 201);
+          }
+        // $validatedData = $request->validate([
+        //     'country_id' => 'required|exists:countries,id',
+        //     'fields' => 'required|array',
+        //     'fields.*.type' => 'required|string',
+        //     'fields.*.category' => 'required|string',
+        //     'fields.*.is_required' => 'required|boolean',
+        //     'fields.*.options' => 'nullable|array',
+        // ]);
 
-        // Update form's country
-        $form->update([
-            'country_id' => $validatedData['country_id'],
-        ]);
+        // // Update form's country
+        // $form->update([
+        //     'country_id' => $validatedData['country_id'],
+        // ]);
 
-        // Delete old fields
-        $form->fields()->delete();
+        // // Delete old fields
+        // $form->fields()->delete();
 
-        // Add updated fields
-        foreach ($validatedData['fields'] as $fieldData) {
-            $form->fields()->create([
-                'type' => $fieldData['type'],
-                'category' => $fieldData['category'],
-                'is_required' => $fieldData['is_required'],
-                'options' => json_encode($fieldData['options']),
-            ]);
-        }
+        // // Add updated fields
+        // foreach ($validatedData['fields'] as $fieldData) {
+        //     $form->fields()->create([
+        //         'type' => $fieldData['type'],
+        //         'category' => $fieldData['category'],
+        //         'is_required' => $fieldData['is_required'],
+        //         'options' => json_encode($fieldData['options']),
+        //     ]);
+        // }
 
         return response()->json($form->load('fields'), 200);
     }

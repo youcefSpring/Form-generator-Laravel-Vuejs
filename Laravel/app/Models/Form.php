@@ -26,4 +26,6 @@ class Form extends Model
     {
         return $this->hasMany(FormSubmission::class);
     }
+
+
 }

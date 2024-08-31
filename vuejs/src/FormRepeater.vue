@@ -70,15 +70,15 @@
                         </select>
                     </div>
                     <div class="col-md-3" v-if="field.type == 'dropdown'">
+        <!-- Display each option in an input field -->
+        <div v-for="(option, optIndex) in  field.options" :key="optIndex" class="input-group mb-1">
 
-
-              <div v-for="(option, optIndex) in field.options" :key="optIndex" class="input-group mb-1">
-              <input v-model="field.options[optIndex]" placeholder="Option" class="form-control">
-              <button @click="removeOption(index, optIndex)" class="btn btn-danger btn-sm" v-if="field.options.length > 1">Delete</button>
-            </div>
-                            <button @click="addOption(index)" class="btn btn-secondary btn-sm">Add Option</button>
-
-                    </div>
+            <input v-model="field.options[optIndex]" placeholder="Option" class="form-control">
+            <button @click="removeOption(index, optIndex)" class="btn btn-danger btn-sm" v-if="field.options.length > 1">Delete</button>
+        </div>
+        <!-- Button to add a new option -->
+        <button @click="addOption(index)" class="btn btn-secondary btn-sm">Add Option</button>
+    </div>
                     <div class="col-md-3">
                         <select v-model="field.category" class="form-select">
                             <option value="general">General</option>
@@ -97,13 +97,17 @@
         </div>
 
         <div class="d-flex justify-content-between">
+
             <button @click="addField" class="btn btn-primary">Add Field</button>
             <button @click="removeField" class="btn btn-danger" v-if="this.fields.length > 1">Remove Field</button>
+
             <button @click="onUpdate" class="btn btn-warning" v-if="is_update">Update</button>
             <button @click="onSubmit" class="btn btn-success" v-else>Submit</button>
+
             <button @click="discard_update" class="btn btn-danger" v-if="is_update">
                 <i class="fa-solid fa-rotate-left"></i>
-                Discard Update</button>
+                Discard Update
+            </button>
 
         </div>
     </div>
@@ -146,7 +150,8 @@ export default {
             savedForms: [],
             is_update : false,
             list_display : true,
-            id : null
+            id : null,
+            formToEdit: null,
         };
     },
     computed: {
@@ -165,7 +170,7 @@ export default {
 
                     this.savedForms=data.forms
                     this.countries = data.countries;
-                    console.log(this.countries)
+                    // console.log(this.savedForms)
                 });
         },
         fetchForm() {
@@ -173,8 +178,9 @@ export default {
 
             fetch(`/api/form/${this.selectedCountry}`)
                 .then(response => response.json())
-                .then(data => {
-                    this.fields = data.fields || [{ type: 'text', category: 'general', is_required: false, options: [''] }];
+                .then(() => {
+                    this.fields = this.formToEdit.fields || [{ type: 'text', category: 'general', is_required: false, options: [''] }];
+                    // this.fields = data.fields || [{ type: 'text', category: 'general', is_required: false, options: [''] }];
                 });
         },
         addField() {
@@ -201,6 +207,8 @@ export default {
   },
         add_new_form(){
         this.list_display=!this.list_display;
+        this.is_update=false;
+        this.fetchCountries();
         },
         onSubmit() {
             const formData = {
@@ -208,7 +216,7 @@ export default {
                 fields: this.fields,
             };
 
-            console.log( JSON.stringify(formData))
+            // console.log( JSON.stringify(formData))
             fetch('http://127.0.0.1:8000/api/form', {
                 method: 'POST',
                 headers: {
@@ -217,6 +225,7 @@ export default {
                 body: JSON.stringify(formData),
             })
             .then(() => {
+                // console.log(data)
                 this.updateFields() ;
                 this.fetchCountries();
                 this.list_display=true;
@@ -225,57 +234,43 @@ export default {
         },
         onUpdate() {
             const formData = {
-                country_id: this.selectedCountry,
-                fields: this.fields,
+                form: this.formToEdit,
             };
-            fetch('http://127.0.0.1:8000/api/form', {
-                method: 'POST',
+
+            // console.log(formData)
+            fetch(`http://127.0.0.1:8000/api/form/${this.formToEdit.id}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(formData),
             })
             .then(() => {
-                this.updateFields() ;
+                this.updateFields();
                 this.fetchCountries();
+                this.list_display=true;
             } );
-            // console.log( this.formToEdit)
-            // const formData = {
-            //      id  : this.id,
-            //     country_id: this.selectedCountry,
-            //     form: this.formToEdit,
-            // };
 
-            // console.log( JSON.stringify(formData))
-            // fetch(`http://127.0.0.1:8000/api/form/${this.id}`, {
-            //     method: 'PUT',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify(formData),
-            // })
-            // .then(() => {
-            //     this.updateFields() ;
-            //     this.fetchCountries();
-            // } )
-            // ;
         },
         editForm(index) {
             this.id=this.savedForms[index].id
-            const formToEdit = this.savedForms[index];
-            this.selectedCountry = formToEdit.country_id;
-            this.fields = formToEdit.fields;
+            this.formToEdit = this.savedForms[index];
+            this.selectedCountry = this.formToEdit.country_id;
+            this.fields = this.formToEdit.fields;
+            // console.log( JSON.parse(this.fields[0].options));
             this.savedForms.splice(index, 1);
             this.is_update=true;
             this.list_display=false;
+            this.is_update=true;
         },
         discard_update(){
             this.is_update=false;
+            this.list_display=true;
             this.fetchCountries() ;
         },
         deleteForm(index) {
             const formToDelete = this.savedForms[index];
-            console.log(formToDelete.id)
+            // console.log(formToDelete.id)
             fetch(`http://127.0.0.1:8000/api/form/${formToDelete.id}`, {
                 method: 'DELETE',
             }).then(() => {
