@@ -3,6 +3,44 @@
     <div class="container mt-4">
         <h2 class="mb-4">Dynamic Form Generator</h2>
 
+    <div v-if="list_display">
+            <div class="row">
+                <div class="col-md-6">
+                    <h3 class="mt-4">Saved Forms</h3>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-success" @click="add_new_form"> add form</button>
+                </div>
+            </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Country</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(form, formIndex) in savedForms" :key="formIndex">
+                    <td>{{ form.country.name }}</td>
+                    <td>
+                        <button @click="editForm(formIndex)" class="btn btn-warning btn-sm">Edit</button>
+                        <button @click="deleteForm(formIndex)" class="btn btn-danger btn-sm">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+     </div>
+    <div v-else>
+        <div class="row">
+                <div class="col-md-6">
+                    <h3 class="mt-4">Add new Form</h3>
+                </div>
+                <div class="col-md-6">
+                    <button class="btn btn-success" @click="add_new_form">
+                        Forms List
+                    </button>
+                </div>
+            </div>
         <div class="mb-3">
             <label for="country" class="form-label">Select Country:</label>
             <select id="country" class="form-select" v-model="selectedCountry" @change="fetchForm">
@@ -22,9 +60,17 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <input v-if="field.type !== 'dropdown'" v-model="field.value" :type="field.type" :placeholder="`Field ${index + 1}`" :required="field.is_required" class="form-control">
+                        <input v-if="field.type !== 'dropdown'"
+                               v-model="field.value"
+                               :type="field.type"
+                              :placeholder="`Field ${index + 1}`" :required="field.is_required" class="form-control">
                         <div v-else>
-                            <input v-for="(option, optIndex) in field.options" :key="optIndex" v-model="field.options[optIndex]" placeholder="Option" class="form-control mb-1">
+                            <input v-for="(option, optIndex) in field.options"
+                                   :key="optIndex"
+                                   v-model="field.options[optIndex]"
+                                   required
+                                   placeholder="Option"
+                                   class="form-control mb-1">
                             <button @click="addOption(index)" class="btn btn-secondary btn-sm">Add Option</button>
                         </div>
                     </div>
@@ -48,27 +94,15 @@
         <div class="d-flex justify-content-between">
             <button @click="addField" class="btn btn-primary">Add Field</button>
             <button @click="removeField" class="btn btn-danger" v-if="this.fields.length > 1">Remove Field</button>
-            <button @click="onSubmit" class="btn btn-success">Submit</button>
-        </div>
+            <button @click="onUpdate" class="btn btn-warning" v-if="is_update">Update</button>
+            <button @click="onSubmit" class="btn btn-success" v-else>Submit</button>
+            <button @click="discard_update" class="btn btn-danger" v-if="is_update">Discard Update</button>
 
-        <h3 class="mt-4">Saved Forms</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Country</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(form, formIndex) in savedForms" :key="formIndex">
-                    <td>{{ form.country.name }}</td>
-                    <td>
-                        <button @click="editForm(formIndex)" class="btn btn-warning btn-sm">Edit</button>
-                        <button @click="deleteForm(formIndex)" class="btn btn-danger btn-sm">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        </div>
+    </div>
+
+
+
     </div>
 </template>
 
@@ -80,6 +114,9 @@ export default {
             countries: [],
             fields: [{ value: '', type: 'text', category: 'general', is_required: false, options: [] }],
             savedForms: [],
+            is_update : false,
+            list_display : true,
+            id : null
         };
     },
     methods: {
@@ -117,6 +154,9 @@ export default {
         addOption(index) {
             this.fields[index].options.push('');
         },
+        add_new_form(){
+        this.list_display=!this.list_display;
+        },
         onSubmit() {
             const formData = {
                 country_id: this.selectedCountry,
@@ -137,11 +177,55 @@ export default {
             } )
             ;
         },
+        onUpdate() {
+            const formData = {
+                country_id: this.selectedCountry,
+                fields: this.fields,
+            };
+            fetch('http://127.0.0.1:8000/api/form', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(() => {
+                this.updateFields() ;
+                this.fetchCountries();
+            } );
+            // console.log( this.formToEdit)
+            // const formData = {
+            //      id  : this.id,
+            //     country_id: this.selectedCountry,
+            //     form: this.formToEdit,
+            // };
+
+            // console.log( JSON.stringify(formData))
+            // fetch(`http://127.0.0.1:8000/api/form/${this.id}`, {
+            //     method: 'PUT',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify(formData),
+            // })
+            // .then(() => {
+            //     this.updateFields() ;
+            //     this.fetchCountries();
+            // } )
+            // ;
+        },
         editForm(index) {
+            this.id=this.savedForms[index].id
             const formToEdit = this.savedForms[index];
             this.selectedCountry = formToEdit.country_id;
             this.fields = formToEdit.fields;
             this.savedForms.splice(index, 1);
+            this.is_update=true;
+            this.list_display=false;
+        },
+        discard_update(){
+            this.is_update=false;
+            this.fetchCountries() ;
         },
         deleteForm(index) {
             const formToDelete = this.savedForms[index];
